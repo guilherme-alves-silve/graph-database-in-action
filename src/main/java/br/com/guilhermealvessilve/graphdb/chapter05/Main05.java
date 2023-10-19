@@ -1,7 +1,11 @@
 package br.com.guilhermealvessilve.graphdb.chapter05;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.bothE;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.count;
 
 public class Main05 {
 
@@ -10,6 +14,17 @@ public class Main05 {
             var g = graph.traversal();
             initialize(g);
             friendsAndFriendsOfFriends(g);
+            numberOfFriendsOfEachPerson(g);
+            orderByNameAsc(g);
+            orderByNameDesc(g);
+            orderByNameShuffle(g);
+            groupFriendsOfFriends(g);
+            groupFriendsOfFriendsCount(g);
+            groupFriendsOfFriendsCount2(g);
+            getFirst3Friends(g);
+            getLast3Friends(g);
+            getLast3FriendsReverse(g);
+            getRange4Friends(g);
         }
     }
 
@@ -24,6 +39,113 @@ public class Main05 {
         while (result.hasNext()) {
             System.out.println(result.next());
         }
+    }
+
+    private static void numberOfFriendsOfEachPerson(GraphTraversalSource g) {
+        var result = g.V().hasLabel("person")
+                .project("name", "degree")
+                .by("first_name")
+                .by(bothE().count());
+        System.out.println("numberOfFriendsOfEachPerson:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void orderByNameAsc(GraphTraversalSource g) {
+        var result = g.V().hasLabel("person")
+                .values("first_name")
+                .order()
+                .by();
+        System.out.println("orderByNameAsc:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void orderByNameDesc(GraphTraversalSource g) {
+        var result = g.V().hasLabel("person")
+                .values("first_name")
+                .order()
+                .by(Order.desc);
+        System.out.println("orderByNameDesc:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void orderByNameShuffle(GraphTraversalSource g) {
+        var result = g.V().hasLabel("person")
+                .values("first_name")
+                .order()
+                .by(Order.shuffle);
+        System.out.println("orderByNameShuffle:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void groupFriendsOfFriends(GraphTraversalSource g) {
+        var result = g.V().has("person", "first_name", "Dave")
+                .both()
+                .both()
+                .group()
+                .by("first_name")
+                .unfold();
+        System.out.println("groupFriendsOfFriends:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void groupFriendsOfFriendsCount(GraphTraversalSource g) {
+        var result = g.V().has("person", "first_name", "Dave")
+                .both()
+                .both()
+                .groupCount()
+                .by("first_name")
+                .unfold();
+        System.out.println("groupFriendsOfFriendsCount:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void groupFriendsOfFriendsCount2(GraphTraversalSource g) {
+        var result = g.V().has("person", "first_name", "Dave")
+                .both()
+                .both()
+                .group()
+                .by("first_name")
+                .by(count())
+                .unfold();
+        System.out.println("groupFriendsOfFriendsCount2:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void getFirst3Friends(GraphTraversalSource g) {
+        var result = g.V().hasLabel("person")
+                .values("first_name")
+                .order()
+                .limit(3);
+        System.out.println("getFirst3Friends:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void getLast3Friends(GraphTraversalSource g) {
+        var result = g.V().hasLabel("person")
+                .values("first_name")
+                .order()
+                .tail(3);
+        System.out.println("getLast3Friends:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void getLast3FriendsReverse(GraphTraversalSource g) {
+        var result = g.V().hasLabel("person")
+                .values("first_name")
+                .order()
+                .by(Order.desc)
+                .tail(3);
+        System.out.println("getLast3Friends:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void getRange4Friends(GraphTraversalSource g) {
+        var result = g.V().hasLabel("person")
+                .values("first_name")
+                .order()
+                .range(0, 4);
+        System.out.println("getRange4Friends:");
+        result.forEachRemaining(System.out::println);
     }
 
     private static void initialize(GraphTraversalSource g) {
@@ -41,7 +163,8 @@ public class Main05 {
                 .addE("friends").from(dave).to(josh)
                 .addE("friends").from(dave).to(hank)
                 .addE("friends").from(josh).to(hank)
-                .addE("friends").from(ted).to(josh).iterate();
+                .addE("friends").from(ted).to(josh)
+                .iterate();
 
         g.addE("friends").from(dave).to(jim)
                 .addE("friends").from(dave).to(kelly)

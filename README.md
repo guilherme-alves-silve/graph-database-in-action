@@ -1,5 +1,7 @@
 # Graph Database in Action Study
 
+Study of the book [Graph Database in Action](https://www.manning.com/books/graph-databases-in-action)
+
 ## Run ArcadeDB with Gremlin
 
 ``

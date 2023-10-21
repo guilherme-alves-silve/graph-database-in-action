@@ -1,6 +1,5 @@
 package br.com.guilhermealvessilve.graphdb.chapter06;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -9,6 +8,10 @@ import java.util.Scanner;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.V;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.both;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.drop;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 
 public class App06 {
 
@@ -155,8 +158,12 @@ public class App06 {
         var keyboard = new Scanner(System.in);
         System.out.println("Enter the name for the person to delete:");
         String name = keyboard.nextLine();
+        var result = g.V().has("person", "first_name", name)
+                .sideEffect(drop())
+                .count()
+                .next();
 
-        return "";
+        return String.valueOf(result);
     }
 
     public static String addFriendsEdge(GraphTraversalSource g) {
@@ -179,7 +186,12 @@ public class App06 {
         System.out.println("Enter the name for the person to find the friends of:");
         String name = keyboard.nextLine();
 
-        return "";
+        var result = g.V().has("person", "first_name", name)
+                .out("friends")
+                .values("first_name")
+                .toList();
+
+        return result.toString();
     }
 
     public static String getFriendsOfFriends(GraphTraversalSource g) {
@@ -187,7 +199,14 @@ public class App06 {
         System.out.println("Enter the name for the person to find the friends of:");
         String name = keyboard.nextLine();
 
-        return "";
+        var result = g.V().has("person", "first_name", name)
+                .repeat(out("friends"))
+                .times(2)
+                .dedup()
+                .values("first_name")
+                .toList();
+
+        return result.toString();
     }
 
     public static String findPathBetweenPeople(GraphTraversalSource g) {
@@ -197,6 +216,12 @@ public class App06 {
         System.out.println("Enter the name for the person to end the edge at:");
         String toName = keyboard.nextLine();
 
-        return "";
+        var result = g.V().has("person", "first_name", fromName)
+                .until(has("person", "first_name", toName))
+                .repeat(both("friends").simplePath())
+                .path()
+                .toList();
+
+        return result.toString();
     }
 }

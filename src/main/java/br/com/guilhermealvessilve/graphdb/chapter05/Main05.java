@@ -1,11 +1,14 @@
 package br.com.guilhermealvessilve.graphdb.chapter05;
 
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.shuffle;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.bothE;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.count;
+import static org.apache.tinkerpop.gremlin.structure.Column.keys;
+import static org.apache.tinkerpop.gremlin.structure.Column.values;
 
 public class Main05 {
 
@@ -25,6 +28,7 @@ public class Main05 {
             getLast3Friends(g);
             getLast3FriendsReverse(g);
             getRange4Friends(g);
+            getTop3FriendsOfFriendsByEdgeCount(g);
         }
     }
 
@@ -63,7 +67,7 @@ public class Main05 {
         var result = g.V().hasLabel("person")
                 .values("first_name")
                 .order()
-                .by(Order.desc);
+                .by(desc);
         System.out.println("orderByNameDesc:");
         result.forEachRemaining(System.out::println);
     }
@@ -72,7 +76,7 @@ public class Main05 {
         var result = g.V().hasLabel("person")
                 .values("first_name")
                 .order()
-                .by(Order.shuffle);
+                .by(shuffle);
         System.out.println("orderByNameShuffle:");
         result.forEachRemaining(System.out::println);
     }
@@ -133,7 +137,7 @@ public class Main05 {
         var result = g.V().hasLabel("person")
                 .values("first_name")
                 .order()
-                .by(Order.desc)
+                .by(desc)
                 .tail(3);
         System.out.println("getLast3Friends:");
         result.forEachRemaining(System.out::println);
@@ -145,6 +149,24 @@ public class Main05 {
                 .order()
                 .range(0, 4);
         System.out.println("getRange4Friends:");
+        result.forEachRemaining(System.out::println);
+    }
+
+    private static void getTop3FriendsOfFriendsByEdgeCount(GraphTraversalSource g) {
+        var result = g.V().has("person", "first_name", "Dave")
+                .both()
+                .both()
+                .groupCount()
+                .by("first_name")
+                .unfold()
+                .order()
+                .by(values, desc)
+                .by(keys)
+                .project("name", "count")
+                .by(keys)
+                .by(values)
+                .limit(3);
+        System.out.println("getTop3FriendsOfFriendsByEdgeCount:");
         result.forEachRemaining(System.out::println);
     }
 

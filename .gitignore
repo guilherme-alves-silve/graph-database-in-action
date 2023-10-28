@@ -36,3 +36,7 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+# Project files
+
+south-america-latest.osm.pbf

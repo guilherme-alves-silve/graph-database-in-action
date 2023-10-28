@@ -6,7 +6,6 @@ g.V().drop().iterate()
 full_path_and_filename = "$BASE_DIR/chapter08/scripts/restaurant-review-network.json"
 
 g.io(full_path_and_filename).
-  with(IO.reader,IO.graphson).
+  with(IO.reader, IO.graphson).
   read().
   iterate()
-

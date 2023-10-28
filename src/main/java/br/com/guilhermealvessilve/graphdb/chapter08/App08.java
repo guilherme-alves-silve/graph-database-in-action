@@ -6,16 +6,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.IO;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
+import org.apache.tinkerpop.gremlin.structure.Column;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 import java.util.Scanner;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.V;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.both;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.drop;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
 public class App08 {
 
@@ -156,7 +153,7 @@ public class App08 {
 
         System.out.println("Returning " + limit + " persons:");
         var persons = g.V().hasLabel("person")
-                .values("first_name")
+                .valueMap("person_id", "first_name")
                 .limit(limit)
                 .fold()
                 .next();
@@ -251,13 +248,13 @@ public class App08 {
     private static String newestRestaurantReviews(GraphTraversalSource g) {
         var keyboard = new Scanner(System.in);
         System.out.println("Enter the id of the restaurant:");
-        var rid = keyboard.nextLong();
-        var result = g.V().has("restaurant", "restaurant_id", rid)
+        var id = keyboard.nextLong();
+        var result = g.V().has("restaurant", "restaurant_id", id)
                 .in("about")
                 .order()
                 .by("created_date", Order.desc)
                 .limit(3)
-                .valueMap("created_date", "body")
+                .valueMap("rating", "created_date", "body")
                 .with(WithOptions.tokens)
                 .toList();
 
@@ -265,12 +262,32 @@ public class App08 {
     }
 
     private static String highestRatedRestaurants(GraphTraversalSource g) {
+        var keyboard = new Scanner(System.in);
+        System.out.println("Enter the id of the person:");
+        var id = keyboard.nextLong();
+        var result = g.V().has("person", "person_id", id)
+                .out("lives")
+                .in("within")
+                .where(inE("about"))
+                .group()
+                    .by(identity())
+                    .by(in("about")
+                            .values("rating")
+                            .mean())
+                .unfold()
+                .order()
+                    .by(Column.values, Order.desc)
+                .limit(10)
+                .project("name", "address", "rating_average")
+                    .by(select(Column.keys).values("name"))
+                    .by(select(Column.keys).values("address"))
+                    .by(select(Column.values))
+                .toList();
 
-        throw new NotImplementedException("Not Implemented Yet");
+        return result.toString();
     }
 
     private static String highestRatedByCuisine(GraphTraversalSource g) {
-
         throw new NotImplementedException("Not Implemented Yet");
     }
 }

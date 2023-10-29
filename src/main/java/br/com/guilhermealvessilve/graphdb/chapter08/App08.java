@@ -3,16 +3,28 @@ package br.com.guilhermealvessilve.graphdb.chapter08;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.process.traversal.IO;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
-import org.apache.tinkerpop.gremlin.structure.Column;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
+import java.util.Arrays;
 import java.util.Scanner;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
+import static org.apache.tinkerpop.gremlin.process.traversal.P.*;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.V;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.both;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.drop;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.identity;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inE;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.select;
+import static org.apache.tinkerpop.gremlin.structure.Column.keys;
+import static org.apache.tinkerpop.gremlin.structure.Column.values;
 
 public class App08 {
 
@@ -66,6 +78,9 @@ public class App08 {
                 case 12:
                     System.out.println("Highest rated restaurants by cuisine near me: " + highestRatedByCuisine(g));
                     break;
+                case 13:
+                    System.out.println("List of cuisine names: " + getCuisinesList(g));
+                    break;
                 default:
                     System.out.println("Sorry, please enter valid Option");
             }
@@ -93,6 +108,7 @@ public class App08 {
         System.out.println("10) Find the newest reviews for a restaurant");
         System.out.println("11) What are the ten highest rated restaurants near me");
         System.out.println("12) What restaurant near me, with a specific cuisine, is the highest rated");
+        System.out.println("13) List all cuisines:");
         System.out.println("0) Quit");
         System.out.println("--------------");
         System.out.println("Enter your choice:");
@@ -252,7 +268,7 @@ public class App08 {
         var result = g.V().has("restaurant", "restaurant_id", id)
                 .in("about")
                 .order()
-                .by("created_date", Order.desc)
+                .by("created_date", desc)
                 .limit(3)
                 .valueMap("rating", "created_date", "body")
                 .with(WithOptions.tokens)
@@ -276,18 +292,53 @@ public class App08 {
                             .mean())
                 .unfold()
                 .order()
-                    .by(Column.values, Order.desc)
+                    .by(values, desc)
                 .limit(10)
                 .project("name", "address", "rating_average")
-                    .by(select(Column.keys).values("name"))
-                    .by(select(Column.keys).values("address"))
-                    .by(select(Column.values))
+                    .by(select(keys).values("name"))
+                    .by(select(keys).values("address"))
+                    .by(select(values))
                 .toList();
 
         return result.toString();
     }
 
     private static String highestRatedByCuisine(GraphTraversalSource g) {
-        throw new NotImplementedException("Not Implemented Yet");
+        var keyboard = new Scanner(System.in);
+        System.out.println("Enter the id for the person:");
+        var id = Integer.valueOf(keyboard.nextLine());
+        System.out.println("Enter a comma separated list of cuisines:");
+        var cuisineList = Arrays.asList(keyboard.nextLine().split(","));
+        cuisineList.replaceAll(String::trim);
+
+        var result = g.V().has("person", "person_id", id)
+                .out("lives")
+                .in("within")
+                .where(out("serves").has("name", within(cuisineList)))
+                .where(inE("about"))
+                .group()
+                .by(identity())
+                .by(in("about")
+                        .values("rating")
+                        .mean())
+                .unfold()
+                .order()
+                .by(values, desc)
+                .limit(10)
+                .project("name", "address", "cuisine")
+                .by(select(keys).values("name"))
+                .by(select(keys).values("address"))
+                .by(select(keys).out("serves").values("name"))
+                .toList();
+
+        return result.toString();
+    }
+
+    private static String getCuisinesList(GraphTraversalSource g) {
+        var result = g.V().hasLabel("cuisine")
+                .values("name")
+                .dedup()
+                .toList();
+        return result.toString();
     }
 }

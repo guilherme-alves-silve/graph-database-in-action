@@ -1,9 +1,9 @@
-package br.com.guilhermealvessilve.graphdb.chapter08;
+package br.com.guilhermealvessilve.graphdb.chapter09;
 
-import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.process.traversal.IO;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 import java.util.Arrays;
@@ -20,13 +20,14 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.identi
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inE;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.select;
 import static org.apache.tinkerpop.gremlin.structure.Column.keys;
 import static org.apache.tinkerpop.gremlin.structure.Column.values;
 
-public class App08 {
+public class App09 {
 
-    public static void main( String[] args ) {
+    public static void main(String[] args) {
         try (var graph = TinkerGraph.open()) {
             var g = getGraphTraversalSource(graph);
             displayMenu(g);
@@ -79,6 +80,12 @@ public class App08 {
                 case 13:
                     System.out.println("List of cuisine names: " + getCuisinesList(g));
                     break;
+                case 14:
+                    System.out.println("List Top 3 Friends Restaurants for City: " + findTop3FriendsRestaurantsForCity(g));
+                    break;
+                case 15:
+                    System.out.println("List cities names: " + getCitiesList(g));
+                    break;
                 default:
                     System.out.println("Sorry, please enter valid Option");
             }
@@ -88,9 +95,8 @@ public class App08 {
     }
 
     public static int showMenu() {
-
-        int option = -1;
-        Scanner keyboard = new Scanner(System.in);
+        int option;
+        var keyboard = new Scanner(System.in);
         System.out.println();
         System.out.println("Main Menu:");
         System.out.println("--------------");
@@ -106,28 +112,21 @@ public class App08 {
         System.out.println("10) Find the newest reviews for a restaurant");
         System.out.println("11) What are the ten highest rated restaurants near me");
         System.out.println("12) What restaurant near me, with a specific cuisine, is the highest rated");
-        System.out.println("13) List all cuisines:");
+        System.out.println("13) List all cuisines");
+        System.out.println("14) List Top 3 Friends restaurants for city");
+        System.out.println("15) List all cities");
         System.out.println("0) Quit");
         System.out.println("--------------");
         System.out.println("Enter your choice:");
         option = keyboard.nextInt();
-
         return option;
-    }
-
-    public static Cluster connectToDatabase() {
-        return Cluster.build()
-                .port(8182)
-                .addContactPoint("localhost")
-                .credentials("root", "rootroot")
-                .create();
     }
 
     public static GraphTraversalSource getGraphTraversalSource(TinkerGraph cluster) {
         var g = cluster.traversal();
         g.V().drop().iterate();
-        var fileName = "/chapter08/scripts/restaurant-review-network.json";
-        var fullFileName = requireNonNull(App08.class.getResource(fileName)).toString()
+        var fileName = "/chapter09/scripts/restaurant-review-network.json";
+        var fullFileName = requireNonNull(App09.class.getResource(fileName)).toString()
                 .replace("file:/", "");
 
         g.io(fullFileName)
@@ -338,5 +337,56 @@ public class App08 {
                 .dedup()
                 .toList();
         return result.toString();
+    }
+
+    private static String findTop3FriendsRestaurantsForCity(GraphTraversalSource g) {
+        var keyboard = new Scanner(System.in);
+        System.out.println("Enter the first name for the person: ");
+        String name = keyboard.nextLine();
+        System.out.println("Enter the city to search in: ");
+        String city = keyboard.nextLine();
+
+        System.out.println("Graph: " + g);
+        var sg = getSubgraphOfFriends(g, name);
+        System.out.println("Subgraph: " + sg);
+        var result = sg.V().has("city", "name", city)
+                .in("within")
+                .where(inE("about"))
+                .group()
+                .by(identity())
+                .by(in("about")
+                        .values("rating")
+                        .mean())
+                .unfold()
+                .order()
+                .by(values, desc)
+                .limit(3)
+                .project("restaurant_id", "restaurant_name", "address", "rating_average")
+                .by(select(keys).values("restaurant_id"))
+                .by(select(keys).values("restaurant_name"))
+                .by(select(keys).values("address"))
+                .by(select(values))
+                .toList();
+        return result.toString();
+    }
+
+    private static String getCitiesList(GraphTraversalSource g) {
+        var result = g.V().hasLabel("city")
+                .values("name")
+                .dedup()
+                .toList();
+        return result.toString();
+    }
+
+    private static GraphTraversalSource getSubgraphOfFriends(GraphTraversalSource g,
+                                                             String firstName) {
+        var sg = (Graph) g.V().has("person", "first_name", firstName)
+                .bothE("friends").subgraph("sg").otherV()
+                .outE("wrote").subgraph("sg").inV()
+                .optional(outE("about").subgraph("sg").inV())
+                .outE("within").subgraph("sg")
+                .cap("sg")
+                .next();
+        return sg.traversal();
     }
 }

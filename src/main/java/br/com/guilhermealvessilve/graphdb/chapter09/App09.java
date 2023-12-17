@@ -122,8 +122,8 @@ public class App09 {
         return option;
     }
 
-    public static GraphTraversalSource getGraphTraversalSource(TinkerGraph cluster) {
-        var g = cluster.traversal();
+    public static GraphTraversalSource getGraphTraversalSource(TinkerGraph graph) {
+        var g = graph.traversal();
         g.V().drop().iterate();
         var fileName = "/chapter09/scripts/restaurant-review-network.json";
         var fullFileName = requireNonNull(App09.class.getResource(fileName)).toString()

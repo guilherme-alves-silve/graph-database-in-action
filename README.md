@@ -1,7 +1,7 @@
 # Graph Database in Action Study
 
-- [ ] Study of the book [Graph Database in Action](https://www.manning.com/books/graph-databases-in-action)
-- [ ] Study of the ebook [PRACTICAL GREMLIN: An Apache TinkerPop Tutorial](https://kelvinlawrence.net/book/Gremlin-Graph-Guide.html)
+- [X] [Graph Database in Action](https://www.manning.com/books/graph-databases-in-action)
+- [ ] [PRACTICAL GREMLIN: An Apache TinkerPop Tutorial](https://kelvinlawrence.net/book/Gremlin-Graph-Guide.html)
 - [ ] Study about working with OpenStreetMap and Leaflet
   - [OpenStreetMap Data Extracts](http://download.geofabrik.de/)
     - [Way](https://wiki.openstreetmap.org/wiki/Way)
